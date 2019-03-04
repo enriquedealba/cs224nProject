@@ -2,7 +2,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torchdiffeq import odeint_adjoint as odeint
+
+#from torchdiffeq import odeint_adjoint as odeint
+from torchdiffeq import odeint
 
 class ODEfunc(nn.Module):
     def __init__(self, f_embed):
@@ -14,8 +16,9 @@ class ODEfunc(nn.Module):
         nn.init.xavier_normal_(self.ode_block1.weight, gain=1)
         self.ode_block2 = nn.Linear(f_embed+1, f_embed)
         nn.init.xavier_normal_(self.ode_block2.weight, gain=1)
+        self.tt = torch.ones(3600, 1, device='cpu')
         
-    #def forward_1(self, t, x_convout):
+    #def forward_lol(self, t, x_convout):
     #    x_1 = F.relu(self.ode_block1(x_convout))
     #    x = F.relu(self.ode_block2(x_1)) + x_1
     #    return x + x_convout
@@ -28,12 +31,13 @@ class ODEfunc(nn.Module):
     #    return x + x_convout
 
     def forward(self, t, x_convout):
-        x = F.relu(x_convout)
-        tt = torch.tensor([t] * x.shape[0]).unsqueeze(-1)
-        ttx = torch.cat([tt, x], 1)
+        x = F.relu(x_convout) ## other way around?
+        #tt = torch.tensor([t] * x.shape[0]).unsqueeze(-1)
+        tt = float(t) * self.tt
+        ttx = torch.cat([tt[:x.shape[0]], x], 1)
         x = F.relu(self.ode_block1(ttx))
-        tt = torch.tensor([t] * x.shape[0]).unsqueeze(-1)
-        ttx = torch.cat([tt, x], 1)
+        #tt = torch.tensor([t] * x.shape[0]).unsqueeze(-1)
+        ttx = torch.cat([tt[:x.shape[0]], x], 1)
         x = self.ode_block2(ttx)
         return x + x_convout
 

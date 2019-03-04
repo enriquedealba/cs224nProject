@@ -56,6 +56,9 @@ from tqdm import tqdm
 from utils import read_corpus, batch_iter
 from vocab import Vocab, VocabEntry
 
+from matplotlib import pyplot as mp
+import matplotlib.pyplot as plt
+
 import torch
 import torch.nn.utils
 
@@ -153,6 +156,13 @@ def train(args: Dict):
     hist_valid_scores = []
     train_time = begin_time = time.time()
     print('begin Maximum Likelihood training')
+    print('hello future humans, this is just a text test')
+
+    avg_loss_list = []
+    avg_ppl_list = []
+    speed_list = []
+    time_list = []
+    iter_list = []
 
     while True:
         epoch += 1
@@ -193,7 +203,11 @@ def train(args: Dict):
                                                                                          cum_examples,
                                                                                          report_tgt_words / (time.time() - train_time),
                                                                                          time.time() - begin_time), file=sys.stderr)
-
+                avg_loss_list.append(report_loss / report_examples)
+                iter_list.append(train_iter)
+                avg_ppl_list.append(math.exp(report_loss / report_tgt_words))
+                speed_list.append(report_tgt_words / (time.time() - train_time))
+                time_list.append(time.time() - begin_time)
                 train_time = time.time()
                 report_loss = report_tgt_words = report_examples = 0.
 
@@ -256,8 +270,22 @@ def train(args: Dict):
                         patience = 0
 
             if epoch == int(args['--max-epoch']):
+                file = open('node-data.txt', 'w')
                 print('reached maximum number of epochs!', file=sys.stderr)
+                print('FINISHED!!! We are done training!!! Saving data:')
+                print('avg speed (words/sec)', np.mean(speed_list))
+                print('Total time:', time_list[-1])
+
+                file.write("iter_list:" + str(iter_list))
+                file.write('\n')
+                file.write("avg_loss_list:" + str(avg_loss_list))
+                file.write('\n')
+                file.write("avg_ppl_list:" + str(avg_ppl_list))
+                file.write('\n')
+                file.write("time_list:" + str(time_list))
+                file.close()
                 exit(0)
+
 
 
 def decode(args: Dict[str, str]):
